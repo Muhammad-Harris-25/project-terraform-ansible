@@ -1,0 +1,43 @@
+name: Deploy Terraform + Ansible
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+
+    - name: Install Ansible & Terraform
+      run: |
+        sudo apt update
+        sudo apt install -y ansible unzip
+        curl -LO https://releases.hashicorp.com/terraform/1.8.7/terraform_1.8.7_linux_amd64.zip
+        unzip terraform_1.8.7_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        terraform -version
+        ansible --version
+
+    - name: Set up EC2 private key
+      run: |
+        echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/terraform-key.pem
+        chmod 600 ~/terraform-key.pem
+
+    - name: Terraform Init & Apply
+      working-directory: ./terraform
+      run: |
+        terraform init
+        terraform apply -auto-approve
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i inventory.ini deploy_frontend.yml --private-key ~/terraform-key.pem -u ubuntu
