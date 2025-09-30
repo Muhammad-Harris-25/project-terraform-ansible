@@ -1,0 +1,38 @@
+---
+- name: Deploy sample frontend
+  hosts: frontend
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create sample index.html
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Welcome</title>
+          </head>
+          <body>
+              <h1>Welcome to your EC2 frontend!</h1>
+              <p>This is a sample page deployed via Ansible.</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
